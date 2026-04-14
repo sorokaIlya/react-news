@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import { v4 as uuidv4 } from 'uuid';
+import { API_URL } from '../config';
 import type {
   PostsResponse,
   PostDetailResponse,
@@ -9,8 +10,6 @@ import type {
   TierFilter,
 } from './types';
 
-const BASE_URL = 'https://k8s.mectest.ru/test-app';
-
 export class ApiClient {
   private http: AxiosInstance;
   private token: string;
@@ -19,7 +18,7 @@ export class ApiClient {
     this.token = uuidv4();
 
     this.http = axios.create({
-      baseURL: BASE_URL,
+      baseURL: API_URL,
       timeout: 15_000,
       headers: { 'Content-Type': 'application/json' },
     });

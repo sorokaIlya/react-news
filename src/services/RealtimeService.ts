@@ -1,6 +1,5 @@
+import { WS_URL } from '../config';
 import type { WsEvent, WsLikeUpdated, WsCommentAdded } from '../api/types';
-
-const WS_URL = 'wss://k8s.mectest.ru/test-app/ws';
 const RECONNECT_DELAY = 3000;
 
 type Listener<T> = (event: T) => void;
