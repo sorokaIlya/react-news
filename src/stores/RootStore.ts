@@ -1,8 +1,9 @@
-import { ApiClient } from '../api/client';
+import { CommentsStore, PostDetailStore } from '@/widgets/post-detail';
+import { ApiClient } from '../shared/api';
 import { FeedStore } from './FeedStore';
-import { PostDetailStore } from './PostDetailStore';
-import { CommentsStore } from './CommentsStore';
-import { RealtimeService } from '../services/RealtimeService';
+import { RealtimeService } from '@/features/realtime';
+
+
 
 export class RootStore {
   readonly api: ApiClient;

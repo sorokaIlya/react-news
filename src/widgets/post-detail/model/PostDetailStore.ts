@@ -10,11 +10,8 @@ export class PostDetailStore {
 
   private currentId: string | null = null;
 
-  private api: ApiClient;
-
-  constructor(api: ApiClient) {
-    this.api = api;
-    makeAutoObservable(this, { api: false } as any, { autoBind: true });
+  constructor(private api: ApiClient) {
+    makeAutoObservable(this, undefined, { autoBind: true });
   }
 
   async load(id: string) {

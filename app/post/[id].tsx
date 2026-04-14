@@ -9,11 +9,13 @@ import {
 } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { observer } from 'mobx-react-lite';
-import { useStore } from '../../src/context/StoreContext';
-import { LikeButton } from '../../src/components/LikeButton';
-import { CommentItem } from '../../src/components/CommentItem';
-import { CommentInput } from '../../src/components/CommentInput';
-import { colors, spacing, radii, typography } from '../../src/theme/tokens';
+
+
+import { useStore } from '@/init';
+import { colors, radii, spacing, typography } from '@/shared/theme';
+import { CommentInput, CommentItem } from '@/entities/comment';
+import { LikeButton } from '@/features/like-post';
+
 
 const PostDetailScreen = observer(() => {
   const { id } = useLocalSearchParams<{ id: string }>();

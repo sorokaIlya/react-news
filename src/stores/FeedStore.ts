@@ -1,6 +1,7 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import type { ApiClient } from '../api/client';
-import type { Post, TierFilter } from '../api/types';
+import type { ApiClient } from '@/shared/api';
+import { Post, TierFilter } from '@/shared/api';
+
 
 export class FeedStore {
   posts: Post[] = [];
