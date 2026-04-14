@@ -9,15 +9,15 @@ import {
 } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { observer } from 'mobx-react-lite';
-import { useStore } from '@/init';
-import { LikeButton } from '@/features/like-post';
-import { CommentItem, CommentInput } from '@/entities/comment';
-import { colors, spacing, radii, typography } from '@/shared/theme';
+import { useStore } from '../../src/context/StoreContext';
+import { LikeButton } from '../../src/components/LikeButton';
+import { CommentItem } from '../../src/components/CommentItem';
+import { CommentInput } from '../../src/components/CommentInput';
+import { colors, spacing, radii, typography } from '../../src/theme/tokens';
 
-const PostDetailScreen = observer(function PostDetailScreen() {
+const PostDetailScreen = observer(() => {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const root = useStore();
-  const { postDetail, comments } = root;
+  const { feed, postDetail, comments } = useStore();
 
   useEffect(() => {
     postDetail.load(id);
@@ -28,22 +28,19 @@ const PostDetailScreen = observer(function PostDetailScreen() {
     };
   }, [id, postDetail, comments]);
 
-  const handleLike = useCallback(async () => {
+  const handleLike = async () => {
     const result = await postDetail.toggleLike();
     if (result) {
-      root.syncLikeToFeed(result.postId, result.isLiked, result.likesCount);
+      feed.applyLikeToggle(result.postId, result.isLiked, result.likesCount);
     }
-  }, [postDetail, root]);
+  };
 
-  const handleAddComment = useCallback(
-    async (text: string) => {
-      const ok = await comments.send(text);
-      if (ok) {
-        postDetail.updateCommentsCount(1);
-      }
-    },
-    [comments, postDetail],
-  );
+  const handleAddComment = async (text: string) => {
+    const ok = await comments.send(text);
+    if (ok) {
+      postDetail.updateCommentsCount(1);
+    }
+  };
 
   const handleEndReached = useCallback(() => {
     comments.loadMore();
