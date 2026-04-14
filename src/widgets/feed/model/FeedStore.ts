@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import type { ApiClient } from '../api/client';
-import type { Post, TierFilter } from '../api/types';
+import type { ApiClient } from '@/shared/api';
+import type { Post, TierFilter } from '@/shared/api';
 
 export class FeedStore {
   posts: Post[] = [];
@@ -16,7 +16,7 @@ export class FeedStore {
 
   constructor(api: ApiClient) {
     this.api = api;
-    makeAutoObservable(this, undefined, { autoBind: true });
+    makeAutoObservable(this, { api: false } as any, { autoBind: true });
   }
 
   setTier(tier: TierFilter) {

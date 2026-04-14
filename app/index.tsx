@@ -9,11 +9,11 @@ import {
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { observer } from 'mobx-react-lite';
-import { useStore } from '../src/context/StoreContext';
-import { PostCard } from '../src/components/PostCard';
-import { TierTabs } from '../src/components/TierTabs';
-import { colors, spacing, typography } from '../src/theme/tokens';
-import type { TierFilter } from '../src/api/types';
+import { useStore } from '@/init';
+import { PostCard } from '@/entities/post';
+import { TierTabs } from '@/widgets/feed';
+import { colors, spacing, typography } from '@/shared/theme';
+import type { TierFilter } from '@/shared/api';
 
 const FeedScreen = observer(function FeedScreen() {
   const { feed } = useStore();

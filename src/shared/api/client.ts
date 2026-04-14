@@ -54,6 +54,7 @@ export class ApiClient {
     return this.token;
   }
 
+  // ---- Posts ----
 
   async getPosts(params: {
     limit?: number;
@@ -79,6 +80,7 @@ export class ApiClient {
     return data;
   }
 
+  // ---- Comments ----
 
   async getComments(params: {
     postId: string;

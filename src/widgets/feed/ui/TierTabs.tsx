@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { colors, spacing, radii, typography } from '../theme/tokens';
-import type { TierFilter } from '../api/types';
+import { colors, spacing, radii, typography } from '@/shared/theme';
+import type { TierFilter } from '@/shared/api';
 
 const TABS: { key: TierFilter; label: string }[] = [
   { key: 'all', label: 'Все' },

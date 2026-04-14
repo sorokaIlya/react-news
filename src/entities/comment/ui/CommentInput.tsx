@@ -8,7 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { colors, spacing, radii, typography } from '../theme/tokens';
+import { colors, spacing, radii, typography } from '@/shared/theme';
 
 interface CommentInputProps {
   onSubmit: (text: string) => void;

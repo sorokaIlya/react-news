@@ -7,7 +7,7 @@ import Animated, {
   withSequence,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { colors, spacing, radii, typography } from '../theme/tokens';
+import { colors, spacing, radii, typography } from '@/shared/theme';
 
 interface LikeButtonProps {
   isLiked: boolean;

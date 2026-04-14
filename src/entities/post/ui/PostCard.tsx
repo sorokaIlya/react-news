@@ -7,14 +7,15 @@ import {
   Pressable,
 } from 'react-native';
 import { router } from 'expo-router';
-import { colors, spacing, radii, typography, shadows } from '../theme/tokens';
-import type { Post } from '../api/types';
+import { colors, spacing, radii, typography, shadows } from '@/shared/theme';
+import type { Post } from '@/shared/api';
+import { observer } from 'mobx-react-lite';
 
 interface PostCardProps {
   post: Post;
 }
 
-export function PostCard({ post }: PostCardProps) {
+export const PostCard = observer<PostCardProps>(({ post }) => {
   return (
     <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
@@ -61,7 +62,7 @@ export function PostCard({ post }: PostCardProps) {
       </View>
     </Pressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {

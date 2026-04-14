@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import type { ApiClient } from '../api/client';
-import type { Post } from '../api/types';
+import type { ApiClient } from '@/shared/api';
+import type { Post } from '@/shared/api';
 
 export class PostDetailStore {
   post: Post | null = null;

@@ -3,8 +3,8 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native';
-import { colors } from '../src/theme/tokens';
-import { StoreProvider } from '../src/context/StoreContext';
+import { colors } from '@/shared/theme';
+import { StoreProvider } from '@/init';
 
 export default function RootLayout() {
   return (

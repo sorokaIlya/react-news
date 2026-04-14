@@ -1,5 +1,6 @@
-import { WS_URL } from '../config';
-import type { WsEvent, WsLikeUpdated, WsCommentAdded } from '../api/types';
+import { WS_URL } from '@/shared/config';
+import type { WsEvent, WsLikeUpdated, WsCommentAdded } from '../model/types';
+
 const RECONNECT_DELAY = 3000;
 
 type Listener<T> = (event: T) => void;

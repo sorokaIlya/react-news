@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import type { ApiClient } from '../api/client';
-import type { Comment } from '../api/types';
+import type { ApiClient } from '@/shared/api';
+import type { Comment } from '@/shared/api';
 
 export class CommentsStore {
   comments: Comment[] = [];

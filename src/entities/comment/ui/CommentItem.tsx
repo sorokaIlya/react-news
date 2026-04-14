@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
-import { colors, spacing, typography } from '../theme/tokens';
-import type { Comment } from '../api/types';
+import { colors, spacing, typography } from '@/shared/theme';
+import type { Comment } from '@/shared/api';
 
 interface CommentItemProps {
   comment: Comment;

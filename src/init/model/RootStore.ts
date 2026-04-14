@@ -1,8 +1,7 @@
-import { ApiClient } from '../api/client';
-import { FeedStore } from './FeedStore';
-import { PostDetailStore } from './PostDetailStore';
-import { CommentsStore } from './CommentsStore';
-import { RealtimeService } from '../services/RealtimeService';
+import { ApiClient } from '@/shared/api';
+import { FeedStore } from '@/widgets/feed';
+import { PostDetailStore, CommentsStore } from '@/widgets/post-detail';
+import { RealtimeService } from '@/features/realtime';
 
 export class RootStore {
   readonly api: ApiClient;
@@ -39,6 +38,10 @@ export class RootStore {
     });
 
     this.disposers.push(unsubLike, unsubComment);
+  }
+
+  syncLikeToFeed(postId: string, isLiked: boolean, likesCount: number) {
+    this.feed.applyLikeToggle(postId, isLiked, likesCount);
   }
 
   init() {
