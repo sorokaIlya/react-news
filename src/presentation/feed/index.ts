@@ -1,0 +1,1 @@
+export { TierTabs } from './TierTabs';

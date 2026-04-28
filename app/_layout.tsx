@@ -1,15 +1,16 @@
 import React from 'react';
+import { StyleSheet } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { StyleSheet } from 'react-native';
+
+import { AppProviders } from '@/composition';
 import { colors } from '@/shared/theme';
-import { StoreProvider } from '@/init';
 
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={styles.root}>
-      <StoreProvider>
+      <AppProviders>
         <StatusBar style="dark" />
         <Stack
           screenOptions={{
@@ -19,7 +20,7 @@ export default function RootLayout() {
             contentStyle: { backgroundColor: colors.surface },
           }}
         />
-      </StoreProvider>
+      </AppProviders>
     </GestureHandlerRootView>
   );
 }

@@ -14,100 +14,158 @@ React Native (Expo) клиент для платформы Mecenate — лент
 # 1. Установить зависимости
 npm install
 
-# 2. Скопировать переменные окружения
+# 2. Скопировать переменные окружения и заполнить их
 cp .env.example .env
 
 # 3. Запустить dev-сервер
 npx expo start
 ```
 
-После запуска появится QR-код в терминале.
-
-### Expo Go
-
-1. Установите **Expo Go** из [App Store](https://apps.apple.com/app/expo-go/id982107779) или [Google Play](https://play.google.com/store/apps/details?id=host.exp.exponent)
-2. Запустите `npx expo start`
-3. Отсканируйте QR-код камерой (iOS) или из приложения Expo Go (Android)
-4. Приложение откроется на устройстве
-
-> Телефон и компьютер должны быть в одной Wi-Fi сети. Если есть проблемы — запустите с флагом `npx expo start --tunnel`.
-
 ## Переменные окружения
 
-Файл `.env` (создаётся из `.env.example`):
+Все секреты и URL-адреса инфраструктуры передаются через `.env`. В коде нет
+fallback-значений — приложение упадёт со внятной ошибкой, если переменная не
+задана.
 
-| Переменная | Описание | Значение по умолчанию |
-|---|---|---|
-| `EXPO_PUBLIC_API_URL` | Базовый URL REST API | `https://k8s.mectest.ru/test-app` |
-| `EXPO_PUBLIC_WS_URL` | URL WebSocket-сервера | `wss://k8s.mectest.ru/test-app/ws` |
+| Переменная | Описание |
+|---|---|
+| `EXPO_PUBLIC_API_URL` | Базовый URL REST API (без trailing slash) |
+| `EXPO_PUBLIC_WS_URL` | URL WebSocket-сервера |
 
-Expo автоматически подхватывает переменные с префиксом `EXPO_PUBLIC_` — перезапуск dev-сервера после изменения `.env` обязателен.
+> Expo автоматически подхватывает переменные с префиксом `EXPO_PUBLIC_`.
+> После изменения `.env` нужно перезапустить dev-сервер.
 
 ## Авторизация
 
-Регистрация/логин не требуются. При запуске генерируется случайный UUID, который используется как Bearer-токен для всех HTTP-запросов и WebSocket-соединения. Сервер принимает любой валидный UUID как `user_id`.
+Регистрация/логин не требуются. При запуске генерируется случайный UUID,
+который используется как Bearer-токен для всех HTTP-запросов и WebSocket-
+соединения.
 
 ## Стек
 
 | Слой | Технология |
 |---|---|
 | Платформа | React Native + Expo (iOS, Android) |
-| Язык | TypeScript (strict) |
+| Язык | TypeScript (strict, без `any`) |
 | Навигация | Expo Router (file-based) |
-| State management | MobX (RootStore pattern) |
-| HTTP | Axios (interceptors для auth и error handling) |
-| Real-time | WebSocket (RealtimeService) |
-| Анимации | React Native Reanimated 2 |
+| Server state | **TanStack Query (React Query) v5** — кеш, дедупликация, infinite queries, optimistic mutations |
+| Client state | **MobX 6 + mobx-react-lite** — RootStore (session / ui / realtimeStatus) |
+| HTTP-транспорт | Axios + interceptors (auth, error mapping) |
+| Real-time | WebSocket → запись в кеш React Query, с polling-fallback через MobX |
+| Анимации | React Native Reanimated |
 | Тактильный отклик | expo-haptics |
-| Стилизация | Дизайн-токены (`src/theme/tokens.ts`) |
+| Стилизация | Дизайн-токены (`src/shared/theme/tokens.ts`) |
 
 ## Архитектура
 
+Slice-структура (FSD-подобная):
+
 ```
 src/
-  config.ts                  # Env-переменные (API_URL, WS_URL)
-  api/
-    client.ts                # ApiClient — Axios instance + interceptors
-    types.ts                 # TypeScript-типы API и WebSocket
-  services/
-    RealtimeService.ts       # WebSocket: connect / reconnect / event dispatch
-  stores/
-    RootStore.ts             # Корневой стор: создаёт ApiClient, сторы, RealtimeService
-    FeedStore.ts             # Лента: загрузка, пагинация, фильтр по tier
-    PostDetailStore.ts       # Детальный пост: загрузка, optimistic like
-    CommentsStore.ts         # Комментарии: загрузка, пагинация, отправка
-  context/
-    StoreContext.tsx          # React Context + StoreProvider + useStore()
-  components/
-    PostCard.tsx              # Карточка поста в ленте
-    TierTabs.tsx              # Таб-фильтр: Все / Бесплатные / Платные
-    LikeButton.tsx            # Кнопка лайка с анимацией
-    CommentItem.tsx           # Элемент комментария
-    CommentInput.tsx          # Поле ввода комментария
-  theme/
-    tokens.ts                 # Дизайн-токены: цвета, отступы, типографика, тени
+  shared/
+    api/           # ApiClient, типы, queryKeys
+    config.ts      # Чтение env с проверкой обязательных переменных
+    lib/           # queryClient, helpers (getErrorMessage)
+    stores/        # MobX RootStore: SessionStore, UiStore, RealtimeStatusStore
+    theme/         # tokens.ts (colors, spacing, radii, typography, sizes, shadows)
+  entities/
+    post/          # PostCard
+    comment/       # CommentItem, CommentInput
+  features/
+    like-post/     # LikeButton + useToggleLike (оптимистичное обновление)
+    add-comment/   # useAddComment
+    realtime/      # RealtimeService + useRealtime (синк WS → React Query кеш)
+  widgets/
+    feed/          # TierTabs + usePosts (useInfiniteQuery)
+    post-detail/   # usePost + useComments
+  init/
+    providers/     # AppProviders (StoresProvider → QueryClientProvider → RealtimeBridge)
 
-app/
-  _layout.tsx                 # Root layout: GestureHandler, StoreProvider, Stack
-  index.tsx                   # Экран ленты (Feed)
-  post/[id].tsx               # Экран детальной публикации (Post Detail)
+app/                # Expo Router
+  _layout.tsx
+  index.tsx         # Лента
+  post/[id].tsx     # Детальная публикация
 ```
 
 ### Поток данных
 
 ```
-ApiClient (Axios + interceptors)
-    │
-    ├── FeedStore.loadPosts()
-    ├── PostDetailStore.load(id)
-    └── CommentsStore.load(postId)
+Axios ApiClient
+   │
+   ├── usePosts(tier)               → useInfiniteQuery
+   ├── usePost(id)                  → useQuery
+   ├── useComments(postId)          → useInfiniteQuery
+   ├── useToggleLike(postId)        → useMutation + optimistic cache patch
+   └── useAddComment(postId)        → useMutation + cache prepend
 
-RealtimeService (WebSocket)
-    │
-    └── RootStore.bindRealtime()
-          ├── like_updated  → FeedStore + PostDetailStore
-          └── comment_added → CommentsStore + PostDetailStore
+RealtimeService (WS)
+   │
+   └── useRealtime() — пишет в queryClient.setQueryData
+         ├── like_updated  → апдейт detail и каждой ленты
+         └── comment_added → prepend в comments + bump commentsCount
 ```
+
+### Разделение ответственности: MobX vs React Query
+
+Каждое состояние имеет ровно одного владельца — это правило, по которому
+проще всего отвечать на вопрос «куда положить?».
+
+| Что | Где живёт | Почему |
+|---|---|---|
+| Список постов, детальный пост, комментарии | React Query кеш | server state: TTL, дедупликация, infinite scroll, optimistic-апдейты |
+| Session token (Bearer для HTTP и WS) | `SessionStore` (MobX) | переживает экраны; HTTP и WS читают его лениво через `getToken()` |
+| Выбранный таб ленты (`tier`) | `UiStore` (MobX) | ephemeral, но должно переживать unmount экрана и шариться между виджетами |
+| Статус WS-соединения, число неудачных reconnect'ов, режим fallback | `RealtimeStatusStore` (MobX) | реактивный флаг для UI-бейджа и для решения «опрашивать ли REST» |
+| Текст в поле комментария, локальные toggle'ы | `useState` экрана | нужно только этому экрану |
+
+`RootStore` собирает три стора и предоставляется через `StoresProvider`,
+который смонтирован **выше** `QueryClientProvider`: `ApiClient` должен
+получить функцию `SessionStore.getToken` до того, как стартанёт первый запрос.
+
+### Точки интеграции MobX ↔ transport / React Query
+
+```
+1. SessionStore.getToken() ─▶  ApiClient / RealtimeService
+                               (HTTP Authorization, WS ?token=…)
+
+2. UiStore.tier         ─────▶  usePosts(ui.tier)
+                                (ключ кеша React Query)
+
+3. RealtimeStatusStore  ─────▶  refetchInterval в usePosts/useComments/usePost
+                                (polling-fallback, когда WS лежит)
+```
+
+`SessionStore` остаётся единственным владельцем строки токена. Транспорт
+хранит только функцию-геттер, поэтому после `rotate()` новые HTTP-запросы
+и новые WS-подключения автоматически используют актуальное значение.
+
+Сторы экспортируют только то, что нужно потребителям — никто из
+React Query кода не читает MobX напрямую, и наоборот: WS-сервис не
+дёргает `queryClient`, он лишь докладывает статус в стор, а уже
+`useRealtime` маршрутизирует события в кеш.
+
+### Polling fallback
+
+`RealtimeService` остаётся «тупым» — это просто WebSocket с
+auto-reconnect. Решение «когда переключаться на polling» инкапсулировано
+в `RealtimeStatusStore`:
+
+```
+WS ok                                     fallback / polling
+─────────────────────────────────────────────────────────────
+status:    connected / connecting     →   reconnecting → fallback
+порог:     3 подряд неудачных reconnect'а
+WS retry:  3 секунды                  →   30 секунд (не спамим мёртвый хост)
+RQ poll:   выключен (refetchInterval=false) → 15 секунд
+UI бейдж:  «live»                     →   «offline» (по `isLive` getter'у)
+```
+
+`useRealtime` слушает callback'и сервиса (`connecting` / `connected` /
+`disconnected`) и пробрасывает их в `realtimeStatus.markX()`. Сервис в
+свою очередь спрашивает у стора следующий `reconnectDelayMs`. Когда
+WS снова открывается — `markConnected()` сбрасывает счётчик и переводит
+в `connected`, observer-экраны получают `pollingIntervalMs === false`,
+и React Query сам гасит интервал.
 
 ## Скрипты
 
@@ -117,8 +175,4 @@ RealtimeService (WebSocket)
 | `npm run ios` | Запуск на iOS-симуляторе |
 | `npm run android` | Запуск на Android-эмуляторе |
 | `npm run web` | Запуск в браузере |
-
-## API
-
-- **Swagger/OpenAPI**: https://k8s.mectest.ru/test-app/openapi.json
-- **Документация**: https://k8s.mectest.ru/test-app/docs
+| `npm run typecheck` | `tsc --noEmit` |

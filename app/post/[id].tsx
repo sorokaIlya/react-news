@@ -1,56 +1,66 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import {
-  View,
-  Text,
-  Image,
-  FlatList,
   ActivityIndicator,
+  FlatList,
+  Image,
   StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { observer } from 'mobx-react-lite';
 
+import { useStores } from '@/composition';
+import { CommentInput, CommentItem } from '@/presentation/comment';
+import { LikeButton } from '@/presentation/post';
+import { useComments } from '@/read-model/comments';
+import { usePost } from '@/read-model/posts';
+import {
+  circle,
+  colors,
+  radii,
+  sizes,
+  spacing,
+  typography,
+} from '@/shared/theme';
 
-import { useStore } from '@/init';
-import { colors, radii, spacing, typography } from '@/shared/theme';
-import { CommentInput, CommentItem } from '@/entities/comment';
-import { LikeButton } from '@/features/like-post';
-
-
-const PostDetailScreen = observer(() => {
+export const PostDetailScreen = observer(function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { feed, postDetail, comments } = useStore();
+  const { posts, realtimeStatus } = useStores();
 
-  useEffect(() => {
-    postDetail.load(id);
-    comments.load(id);
-    return () => {
-      postDetail.reset();
-      comments.reset();
-    };
-  }, [id, postDetail, comments]);
+  // Same fallback contract as the feed: read-model polling activates only
+  // when the domain layer reports fallback mode.
+  const refetchInterval = realtimeStatus.pollingIntervalMs;
 
-  const handleLike = async () => {
-    const result = await postDetail.toggleLike();
-    if (result) {
-      feed.applyLikeToggle(result.postId, result.isLiked, result.likesCount);
-    }
-  };
+  const { data: post, isPending } = usePost(id, { refetchInterval });
+  const {
+    comments,
+    isLoading: commentsLoading,
+    isLoadingMore: commentsLoadingMore,
+    loadMore: loadMoreComments,
+  } = useComments(id, { refetchInterval });
 
-  const handleAddComment = async (text: string) => {
-    const ok = await comments.send(text);
-    if (ok) {
-      postDetail.updateCommentsCount(1);
-    }
-  };
+  const isLikePending = id ? posts.isLiking(id) : false;
+  const isCommentPending = id ? posts.isSubmittingComment(id) : false;
+
+  const handleLike = useCallback(() => {
+    if (!id || isLikePending) return;
+    void posts.toggleLike(id);
+  }, [id, isLikePending, posts]);
+
+  const handleAddComment = useCallback(
+    (text: string) => {
+      if (!id || isCommentPending) return;
+      void posts.addComment(id, text);
+    },
+    [id, isCommentPending, posts],
+  );
 
   const handleEndReached = useCallback(() => {
-    comments.loadMore();
-  }, [comments]);
+    loadMoreComments();
+  }, [loadMoreComments]);
 
-  const post = postDetail.post;
-
-  if (postDetail.isLoading || !post) {
+  if (isPending || !post) {
     return (
       <View style={styles.center}>
         <Stack.Screen options={{ title: '' }} />
@@ -107,7 +117,7 @@ const PostDetailScreen = observer(() => {
             isLiked={post.isLiked}
             likesCount={post.likesCount}
             onPress={handleLike}
-            disabled={postDetail.isLiking}
+            disabled={isLikePending}
           />
           <View style={styles.commentsBadge}>
             <Text style={styles.commentsCount}>
@@ -121,7 +131,7 @@ const PostDetailScreen = observer(() => {
         <Text style={styles.commentsTitle}>Комментарии</Text>
       </View>
 
-      {comments.isLoading && (
+      {commentsLoading && (
         <View style={styles.commentsLoading}>
           <ActivityIndicator color={colors.primary} />
         </View>
@@ -139,21 +149,21 @@ const PostDetailScreen = observer(() => {
       />
 
       <FlatList
-        data={comments.comments}
+        data={comments}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <CommentItem comment={item} />}
         ListHeaderComponent={headerComponent}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
         ListFooterComponent={
-          comments.isLoadingMore ? (
+          commentsLoadingMore ? (
             <View style={styles.footer}>
               <ActivityIndicator color={colors.primary} />
             </View>
           ) : null
         }
         ListEmptyComponent={
-          !comments.isLoading ? (
+          !commentsLoading ? (
             <View style={styles.emptyComments}>
               <Text style={styles.emptyText}>Пока нет комментариев</Text>
             </View>
@@ -164,7 +174,7 @@ const PostDetailScreen = observer(() => {
 
       <CommentInput
         onSubmit={handleAddComment}
-        isLoading={comments.isSending}
+        isLoading={isCommentPending}
       />
     </View>
   );
@@ -185,7 +195,7 @@ const styles = StyleSheet.create({
   },
   cover: {
     width: '100%',
-    height: 240,
+    height: sizes.cover.detail,
     backgroundColor: colors.surfaceSecondary,
   },
   body: {
@@ -197,9 +207,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: sizes.avatar.lg,
+    height: sizes.avatar.lg,
+    borderRadius: circle(sizes.avatar.lg),
     backgroundColor: colors.surfaceSecondary,
   },
   authorInfo: {
@@ -215,23 +225,22 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   verifiedBadge: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: sizes.badge.md,
+    height: sizes.badge.md,
+    borderRadius: circle(sizes.badge.md),
     backgroundColor: colors.verified,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: spacing.xs,
   },
   verifiedIcon: {
+    ...typography.iconMd,
     color: colors.white,
-    fontSize: 10,
-    fontWeight: '700',
   },
   subscribers: {
     ...typography.caption,
     color: colors.textTertiary,
-    marginTop: 2,
+    marginTop: spacing.xxs,
   },
   paidBadge: {
     backgroundColor: colors.paidBadgeBg,
@@ -240,9 +249,8 @@ const styles = StyleSheet.create({
     borderRadius: radii.sm,
   },
   paidText: {
-    ...typography.small,
+    ...typography.smallBold,
     color: colors.paidBadge,
-    fontWeight: '600',
   },
   title: {
     ...typography.h1,
@@ -263,7 +271,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   lockedIcon: {
-    fontSize: 32,
+    ...typography.iconXl,
     marginBottom: spacing.sm,
   },
   lockedText: {
